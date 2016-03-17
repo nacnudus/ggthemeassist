@@ -9,15 +9,19 @@
 #' @import ggplot2
 #' @import formatR
 #' @import rstudioapi
-ggThemeAssist <- function(){
+ggThemeAssist <- function(text = ""){
 
-  # Get the document context.
-  context <- rstudioapi::getActiveDocumentContext()
+  if (rstudioapi::isAvailable()) {
+    # Get the document context.
+    context <- rstudioapi::getActiveDocumentContext()
 
-  # Set the default data to use based on the selection.
-  text <- context$selection[[1]]$text
+    # Set the default data to use based on the selection.
+    text <- context$selection[[1]]$text
+  } else {
+    stopifnot(nchar(text) > 0)
+  }
 
-  stopifnot(nchar(text) > 0)
+
 
   if (grepl('[\\+\\(]', text)) {
     gg_original <- eval(parse(text = text))
@@ -459,9 +463,15 @@ ggThemeAssist <- function(){
 
         result <- formatR::tidy_source(text = result, output = FALSE, width.cutoff = 40)$text.tidy
         result <- paste(result, collapse = "\n")
-        rstudioapi::insertText(result)
+        if (rstudioapi::isAvailable()) {
+          rstudioapi::insertText(result)
+        }
       }
-      invisible(stopApp())
+      if (rstudioapi::isAvailable()) {
+        invisible(stopApp())
+      } else {
+        stopApp(result)
+      }
     })
 
     observeEvent(input$cancel, {
