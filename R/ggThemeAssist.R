@@ -17,26 +17,33 @@
 #' @export
 ggThemeAssist <- function(text = ""){
 
+  # Check if subtitles are supported
+  SubtitlesSupport <- any(names(formals(ggtitle)) == 'subtitle')
+
+  # If this is being run as an RStudio addin, then get the document context.
   if (rstudioapi::isAvailable()) {
-    # Get the document context.
     context <- rstudioapi::getActiveDocumentContext()
 
     # Set the default data to use based on the selection.
     text <- context$selection[[1]]$text
-  } else {
-    stopifnot(nchar(text) > 0)
   }
 
-
+  if (nchar(text) == 0) {
+    stop('Please highlight a ggplot2 plot before selecting this addin, or, if using in the console, please provide a ggplot2 object to the `text` parameter.')
+  }
 
   if (grepl('[\\+\\(]', text)) {
     gg_original <- eval(parse(text = text))
   } else {
+    text <- gsub('\\s+', '', text)
     gg_original <- get(text, envir = .GlobalEnv)
   }
 
-  stopifnot(is.ggplot(gg_original))
-
+  if (!is.ggplot(gg_original)) {
+    stop('No ggplot2 object has been selected. Fool someone else!')
+  }
+  # add rgb colours to the available colours
+  colours.available <- c(colours.available, getRGBHexColours(gg_original))
   default <- updateDefaults(gg_original, default, linetypes = linetypes)
 
   ui <- miniPage(
@@ -158,59 +165,48 @@ ggThemeAssist <- function(text = ""){
                                     fillRow(height = heading.height, width = '100%',
                                             headingOutput('Labels'),
                                             headingOutput('Plot Title'),
-                                            headingOutput('Axis Labels'),
-                                            headingOutput('Subtitle'),
-                                            headingOutput('Caption')
+                                            headingOutput('Axis Labels')
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('plot.title', label = 'Title', value = gg_original$labels$title, width = input.width),
+                                            textInput('plot.title', label = 'Title', value = preserveNewlines(gg_original$labels$title), width = input.width),
                                             selectInput('plot.title.family', label = 'Family', choices = text.families, selected = default$plot.title$family, width = input.width),
-                                            selectInput('axis.title.family', label = 'Family', choices = text.families, selected = default$axis.title$family, width = input.width),
-                                            selectInput('plot.subtitle.family', label = 'Family', choices = text.families, selected = default$plot.subtitle$family, width = input.width),
-                                            selectInput('plot.caption.family', label = 'Family', choices = text.families, selected = default$plot.caption$family, width = input.width)
+                                            selectInput('axis.title.family', label = 'Family', choices = text.families, selected = default$axis.title$family, width = input.width)
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('axis.title.x', label = 'x-Axis', value = gg_original$labels$x, width = input.width),
+                                            textInput('axis.title.x', label = 'x-Axis', value = preserveNewlines(gg_original$labels$x), width = input.width),
                                             selectInput('plot.title.face', label = 'Face', choices = text.faces, width = input.width, selected = default$plot.title$face),
-                                            selectInput('axis.title.face', label = 'Face', choices = text.faces, width = input.width, selected = default$axis.title$face),
-                                            selectInput('plot.subtitle.face', label = 'Face', choices = text.faces, width = input.width, selected = default$plot.subtitle$face),
-                                            selectInput('plot.caption.face', label = 'Face', choices = text.faces, width = input.width, selected = default$plot.caption$face)
+                                            selectInput('axis.title.face', label = 'Face', choices = text.faces, width = input.width, selected = default$axis.title$face)
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('axis.title.y', label = 'y-Axis', value = gg_original$labels$y, width = input.width),
+                                            textInput('axis.title.y', label = 'y-Axis', value = preserveNewlines(gg_original$labels$y), width = input.width),
                                             numericInput('plot.title.size', label = 'Size', min = 1, max = 30, value = default$plot.title$size, step = 1, width = input.width),
-                                            numericInput('axis.title.size', label = 'Size', min = 1, max = 30, value = default$axis.title$size, step = 1, width = input.width),
-                                            numericInput('plot.subtitle.size', label = 'Size', min = 1, max = 30, value = default$plot.subtitle$size, step = 1, width = input.width),
-                                            numericInput('plot.caption.size', label = 'Size', min = 1, max = 30, value = default$plot.caption$size, step = 1, width = input.width)
+                                            numericInput('axis.title.size', label = 'Size', min = 1, max = 30, value = default$axis.title$size, step = 1, width = input.width)
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('legend.colour.title', label = 'Colour', value = gg_original$labels$colour, width = input.width),
+                                            textInput('legend.colour.title', label = 'Colour', value = preserveNewlines(gg_original$labels$colour), width = input.width),
                                             selectizeInput('plot.title.colour', label = 'Colour', choices = colours.available, selected = default$plot.title$colour, width = input.width, options = list(create = TRUE)),
-                                            selectizeInput('axis.title.colour', label = 'Colour', choices = colours.available, selected = default$axis.title$colour, width = input.width, options = list(create = TRUE)),
-                                            selectizeInput('plot.subtitle.colour', label = 'Colour', choices = colours.available, selected = default$plot.subtitle$colour, width = input.width, options = list(create = TRUE)),
-                                            selectizeInput('plot.caption.colour', label = 'Colour', choices = colours.available, selected = default$plot.caption$colour, width = input.width, options = list(create = TRUE))
+                                            selectizeInput('axis.title.colour', label = 'Colour', choices = colours.available, selected = default$axis.title$colour, width = input.width, options = list(create = TRUE))
+
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('legend.fill.title', label = 'Fill', value = gg_original$labels$fill, width = input.width),
+                                            textInput('legend.fill.title', label = 'Fill', value = preserveNewlines(gg_original$labels$fill), width = input.width),
                                             numericInput('plot.title.hjust', 'Hjust', value = default$plot.title$hjust, step = 0.25, width = input.width),
-                                            numericInput('axis.title.hjust', 'Hjust', value = default$axis.title$hjust, step = 0.25, width = input.width),
-                                            numericInput('plot.subtitle.hjust', 'Hjust', value = default$plot.subtitle$hjust, step = 0.25, width = input.width),
-                                            numericInput('plot.caption.hjust', 'Hjust', value = default$plot.caption$hjust, step = 0.25, width = input.width)
+                                            numericInput('axis.title.hjust', 'Hjust', value = default$axis.title$hjust, step = 0.25, width = input.width)
+
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('plot.subtitle.text', label = 'Subtitle', value = gg_original$labels$subtitle, width = input.width),
+                                            '',
                                             numericInput('plot.title.vjust', 'Vjust', value = default$plot.title$vjust, step = 0.25, width = input.width),
-                                            numericInput('axis.title.vjust', 'Vjust', value = default$axis.title$vjust, step = 0.25, width = input.width),
-                                            numericInput('plot.subtitle.vjust', 'Vjust', value = default$plot.subtitle$vjust, step = 0.25, width = input.width),
-                                            numericInput('plot.caption.vjust', 'Vjust', value = default$plot.caption$vjust, step = 0.25, width = input.width)
+                                            numericInput('axis.title.vjust', 'Vjust', value = default$axis.title$vjust, step = 0.25, width = input.width)
+
                                     ),
                                     fillRow(height = line.height, width = '100%',
-                                            textInput('plot.caption.text', label = 'Caption', value = gg_original$labels$caption, width = input.width),
+                                            '',
                                             numericInput('plot.title.angle', label = 'Angle', min = -180, max = 180, value = default$plot.title$angle, step = 5, width = input.width),
-                                            numericInput('axis.title.angle', label = 'Angle', min = -180, max = 180, value = default$axis.title$angle, step = 5, width = input.width),
-                                            numericInput('plot.subtitle.angle', label = 'Angle', min = -180, max = 180, value = default$plot.subtitle$angle, step = 5, width = input.width),
-                                            numericInput('plot.caption.angle', label = 'Angle', min = -180, max = 180, value = default$plot.caption$angle, step = 5, width = input.width)
+                                            numericInput('axis.title.angle', label = 'Angle', min = -180, max = 180, value = default$axis.title$angle, step = 5, width = input.width)
+
                                     )
+
                    )
       ),
       miniTabPanel("Legend", icon = icon('sliders'),
@@ -258,17 +254,57 @@ ggThemeAssist <- function(text = ""){
                                             selectizeInput('legend.key.colour', label = 'Colour', choices = colours.available, width = input.width, selected = default$legend.key$colour, options = list(create = TRUE))
                                     )
                    )
-      )
-    )
-  )
+      ),
+      if (SubtitlesSupport) {
+        miniTabPanel("Subtitle and Caption", icon = icon('sliders'),
+                     plotOutput("ThePlot6", width = '100%', height = '45%'),
+                     miniContentPanel(scrollable = TRUE,
+                                      fillRow(width = '100%', height = heading.height,
+                                              headingOutput('Subtitle')
+                                      ),
+                                      fillRow(width = '100%', height = line.height,
+                                              tags$div(style="display:table; width:100%; margin:auto",
+                                                       tags$textarea(id="plot.subtitle.text", label="Subtitle",
+                                                                     rows=3, cols=80, gg_original$labels$subtitle,
+                                                                     style="width:inherit; font-size:9pt; padding:5px"
+                                                       )
+                                              )
+                                      ),
+                                      fillRow(width = '100%', height = line.height,
+                                              selectInput('plot.subtitle.family', label = 'Family', choices = text.families, selected = default$plot.subtitle$family, width = input.width2),
+                                              selectInput('plot.subtitle.face', label = 'Face', choices = text.faces, width = input.width2, selected = default$plot.subtitle$face),
+                                              numericInput('plot.subtitle.size', label = 'Size', min = 1, max = 30, value = default$plot.subtitle$size, step = 1, width = input.width2),
+                                              selectizeInput('plot.subtitle.colour', label = 'Colour', choices = colours.available, selected = default$plot.subtitle$colour, width = input.width2, options = list(create = TRUE)),
+                                              numericInput('plot.subtitle.hjust', 'Hjust', value = default$plot.subtitle$hjust, step = 0.25, width = input.width2)
+                                      ),
+                                      fillRow(width = '100%', height = heading.height,
+                                              headingOutput('Caption')
+                                      ),
+                                      fillRow(width = '100%', height = line.height,
+                                              tags$div(style="display:table; width:100%; margin:auto",
+                                                       tags$textarea(id="plot.caption.text", label="Subtitle",
+                                                                     rows=3, cols=80, gg_original$labels$caption,
+                                                                     style="width:inherit; font-size:9pt; padding:5px"
+                                                       )
+                                              )
+                                      ),
+                                      fillRow(width = '100%', height = line.height,
+                                              selectInput('plot.caption.family', label = 'Family', choices = text.families, selected = default$plot.caption$family, width = input.width2),
+                                              selectInput('plot.caption.face', label = 'Face', choices = text.faces, width = input.width2, selected = default$plot.caption$face),
+                                              numericInput('plot.caption.size', label = 'Size', min = 1, max = 30, value = default$plot.caption$size, step = 1, width = input.width2),
+                                              selectizeInput('plot.caption.colour', label = 'Colour', choices = colours.available, selected = default$plot.caption$colour, width = input.width2, options = list(create = TRUE)),
+                                              numericInput('plot.caption.hjust', 'Hjust', value = default$plot.caption$hjust, step = 0.25, width = input.width2)
+                                      )
+
+
+                     )
+        )
+        }
+    ))
+
 
 
   server <- function(input, output, session) {
-
-    observe({
-      if (is.null(input$ViewerWidth))
-        updateInputChoices(session, input, gg_original, default = default)
-      })
 
     gg_reactive <- reactive({
 
@@ -294,33 +330,15 @@ ggThemeAssist <- function(text = ""){
         need(is.validColour(input$legend.key.colour), '')
       )
 
-      gg_original +
-        labs(title = if (input$plot.title == '') { NULL } else { input$plot.title },
-             x = if (input$axis.title.x == '') { NULL } else { input$axis.title.x },
-             y = if (input$axis.title.y == '') { NULL } else { input$axis.title.y },
-             fill = if (input$legend.fill.title == '') { NULL } else { input$legend.fill.title },
-             colour = if (input$legend.colour.title == '') { NULL } else { input$legend.colour.title },
-             subtitle = if (input$plot.subtitle.text == '') { NULL } else { input$plot.subtitle.text },
-             caption = if (input$plot.caption.text == '') { NULL } else { input$plot.caption.text }) +
+      gg <- gg_original +
+        labs(
+          title = checkInputText(input$plot.title),
+             x = checkInputText(input$axis.title.x),
+             y = checkInputText(input$axis.title.y),
+             fill = checkInputText(input$legend.fill.title),
+             colour = checkInputText(input$legend.colour.title)
+             ) +
         theme(
-          plot.subtitle = element_text(
-            size = input$plot.subtitle.size,
-            colour = input$plot.subtitle.colour,
-            face = input$plot.subtitle.face,
-            family = input$plot.subtitle.family,
-            angle = input$plot.subtitle.angle,
-            hjust = input$plot.subtitle.hjust,
-            vjust = input$plot.subtitle.vjust,
-            lineheight = input$plot.subtitle.lineheight),
-          plot.caption = element_text(
-            size = input$plot.caption.size,
-            colour = input$plot.caption.colour,
-            face = input$plot.caption.face,
-            family = input$plot.caption.family,
-            angle = input$plot.caption.angle,
-            hjust = input$plot.caption.hjust,
-            vjust = input$plot.caption.vjust,
-            lineheight = input$plot.caption.lineheight),
           axis.text = element_text(
             size = input$axis.text.size,
             colour = input$axis.text.colour,
@@ -423,6 +441,35 @@ ggThemeAssist <- function(text = ""){
           }),
           legend.direction = input$legend.direction
         )
+      if (SubtitlesSupport) {
+        gg <- gg + labs(
+          subtitle = if (input$plot.subtitle.text == '') {NULL} else {input$plot.subtitle.text},
+          caption = if (input$plot.caption.text == '') {NULL} else {input$plot.caption.text}
+        ) +
+          theme(
+            plot.subtitle = element_text(
+              size = input$plot.subtitle.size,
+              colour = input$plot.subtitle.colour,
+              face = input$plot.subtitle.face,
+              family = input$plot.subtitle.family,
+              #angle = input$plot.subtitle.angle,
+              hjust = input$plot.subtitle.hjust,
+              #vjust = input$plot.subtitle.vjust,
+              lineheight = input$plot.subtitle.lineheight),
+            plot.caption = element_text(
+              size = input$plot.caption.size,
+              colour = input$plot.caption.colour,
+              face = input$plot.caption.face,
+              family = input$plot.caption.family,
+              #angle = input$plot.caption.angle,
+              hjust = input$plot.caption.hjust,
+              #vjust = input$plot.caption.vjust,
+              lineheight = input$plot.caption.lineheight)
+          )
+      }
+
+      return(gg)
+
     })
 
     observeEvent(input$legend.click, {
@@ -451,6 +498,7 @@ ggThemeAssist <- function(text = ""){
     output$ThePlot3 <- ThePlot
     output$ThePlot4 <- ThePlot
     output$ThePlot5 <- ThePlot
+    output$ThePlot6 <- ThePlot
 
     observeEvent(input$done, {
       result <- sapply(AvailableElements, compileResults, new = gg_reactive(), original = gg_original, std = default, USE.NAMES = FALSE)

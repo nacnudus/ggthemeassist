@@ -14,6 +14,7 @@ linetypes <- c('blank', 'solid', 'dashed', 'dotted', 'dotdash', 'longdash', 'two
 
 # Configurations
 input.width <- '50%'
+input.width2 <- '90%'
 line.height <- '70px'
 heading.height <- '30px'
 
@@ -95,7 +96,7 @@ default <- list(
     size = 13,
     face = 'plain',
     colour = 'black',
-    hjust = 0.5,
+    hjust = if (any(names(formals(ggtitle)) == 'subtitle')) {0} else {0.5},
     vjust = 0.5,
     angle = 0,
     lineheight = 1.1
