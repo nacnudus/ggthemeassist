@@ -2,13 +2,19 @@
 #'
 #' \code{ggThemeAssist} is a RStudio-Addin that delivers a graphical interface for editing ggplot2 theme elements.
 #'
-#' @details To run the addin, highlight a ggplot2-object in your current script and select \code{ggThemeAssist} from the Addins-menu within RStudio. After editing themes and terminating the addin, a character string containing the desired changes is inserted in your current script.
+#' @details To run as an RStudio addin, highlight a ggplot2 object in your current script and select \code{ggThemeAssist} from the Addins-menu within RStudio. After editing themes and terminating the addin, a character string containing the desired changes is inserted in your current script.
+#'
+#' To run as a Shiny Gadget outside of RStudio, pass the name of the ggplot2-objeobject to the `text` parameter of this function.  The gadget will be opened in the default browser.  After editing themes and terminating the addin, a character string containing the desired changes will be echoed on thethe command line.
+#' 
+#' @param text (string) The name of a ggplot2 object, or code to create a ggplot2 object.  Only for use in the console; has no effect when running as an RStudio addin.
+#'
 #' @return \code{ggThemeAssist} returns a character vector.
 #' @import miniUI
 #' @import shiny
 #' @import ggplot2
 #' @import formatR
 #' @import rstudioapi
+#' @export
 ggThemeAssist <- function(text = ""){
 
   if (rstudioapi::isAvailable()) {
