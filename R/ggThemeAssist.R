@@ -21,7 +21,7 @@ ggThemeAssist <- function(text = ""){
   SubtitlesSupport <- any(names(formals(ggtitle)) == 'subtitle')
 
   # If this is being run as an RStudio addin, then get the document context.
-  if (rstudioapi::isAvailable()) {
+  if (missing(text) && rstudioapi::isAvailable()) {
     context <- rstudioapi::getActiveDocumentContext()
 
     # Set the default data to use based on the selection.
