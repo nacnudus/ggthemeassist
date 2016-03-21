@@ -20,8 +20,11 @@ ggThemeAssist <- function(text = ""){
   # Check if subtitles are supported
   SubtitlesSupport <- any(names(formals(ggtitle)) == 'subtitle')
 
+  # Find out whether it is being run as an RStudio add-in or in the console
+  addin <- missing(text) && rstudioapi::isAvailable()
+
   # If this is being run as an RStudio addin, then get the document context.
-  if (missing(text) && rstudioapi::isAvailable()) {
+  if (addin) {
     context <- rstudioapi::getActiveDocumentContext()
 
     # Set the default data to use based on the selection.
@@ -517,11 +520,11 @@ ggThemeAssist <- function(text = ""){
 
         result <- formatR::tidy_source(text = result, output = FALSE, width.cutoff = 40)$text.tidy
         result <- paste(result, collapse = "\n")
-        if (rstudioapi::isAvailable()) {
+        if (addin) {
           rstudioapi::insertText(result)
         }
       }
-      if (rstudioapi::isAvailable()) {
+      if (addin) {
         invisible(stopApp())
       } else {
         stopApp(result)
